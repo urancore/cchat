@@ -75,7 +75,7 @@ void log_info(Logger *l, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	_vprint_log(l, INFO, fmt, args);
+	_vprint_log(l, LOG_INFO, fmt, args);
 	va_end(args);
 }
 
@@ -83,7 +83,7 @@ void log_fatal(Logger *l, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	_vprint_log(l, FATAL, fmt, args);
+	_vprint_log(l, LOG_FATAL, fmt, args);
 	va_end(args);
 }
 
@@ -91,7 +91,7 @@ void log_error(Logger *l, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	_vprint_log(l, ERROR, fmt, args);
+	_vprint_log(l, LOG_ERROR, fmt, args);
 	va_end(args);
 }
 
@@ -99,7 +99,7 @@ void log_warn(Logger *l, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	_vprint_log(l, WARN, fmt, args);
+	_vprint_log(l, LOG_WARN, fmt, args);
 	va_end(args);
 }
 
@@ -107,7 +107,7 @@ void log_debug(Logger *l, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	_vprint_log(l, DEBUG, fmt, args);
+	_vprint_log(l, LOG_DEBUG, fmt, args);
 	va_end(args);
 }
 
@@ -115,6 +115,6 @@ void log_trace(Logger *l, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	_vprint_log(l, TRACE, fmt, args);
+	_vprint_log(l, LOG_TRACE, fmt, args);
 	va_end(args);
 }

@@ -14,12 +14,12 @@
 #define DEF_LOG_PREFIX "root"
 
 typedef enum {
-	FATAL   = 0,
-	ERROR   = 1,
-	WARN    = 2,
-	INFO    = 3,
-	DEBUG   = 4,
-	TRACE   = 5
+	LOG_FATAL   = 0,
+	LOG_ERROR   = 1,
+	LOG_WARN    = 2,
+	LOG_INFO    = 3,
+	LOG_DEBUG   = 4,
+	LOG_TRACE   = 5
 } LogLevel;
 
 

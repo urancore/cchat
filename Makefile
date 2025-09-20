@@ -13,9 +13,9 @@ Q = $(if $(filter $(V), 1), ,@)
 
 O = out
 D = $(O)/.deps
-DIRS = $(O)/core/socket $(O)/utils/logger $(D)/core/socket $(D)/utils/logger
+DIRS = $(O)/core/socket $(O)/utils/time $(O)/utils/logger $(D)/core/socket $(D)/utils/time $(D)/utils/logger
 
-SRC_COMMON = utils/logger/logger.c $(SOCKET_SRC)
+SRC_COMMON = utils/logger/logger.c utils/time/time.c $(SOCKET_SRC)
 CLIENT_SRC = client.c $(SRC_COMMON)
 SERVER_SRC = server.c $(SRC_COMMON)
 

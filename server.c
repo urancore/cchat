@@ -3,11 +3,16 @@
 #include <stdio.h>
 
 #include "core/socket/socket.h"
+#include "utils/logger/logger.h"
 #include "core/types.h"
+#include "utils/time/time.h"
 
+typedef struct {
+	socket_t sock;
+	Logger *logger;
+} thread_args_t;
 
 #define PORT 5000
-#define BUFFER_SIZE 512
 #define MAX_CLIENTS 100
 
 socket_t clients[MAX_CLIENTS];
@@ -18,7 +23,7 @@ void broadcast(Packet p) {
 	pthread_mutex_lock(&clients_mutex);
 	for (int i = 0; i < client_count; i++) {
 		if (socket_send(clients[i], &p, sizeof(Packet), 0) <= 0) {
-			printf("Failed to send to client %d\n", i);
+			printf("failed to send to client %d\n", i);
 		}
 	}
 	pthread_mutex_unlock(&clients_mutex);
@@ -35,15 +40,16 @@ void remove_client(socket_t sock) {
 	}
 	pthread_mutex_unlock(&clients_mutex);
 }
+
 void *client_handler(void *arg) {
-	socket_t sock = (socket_t)(intptr_t)arg;
+	thread_args_t *args = (thread_args_t *)arg;
 	Packet recv_p;
 
 	while (1) {
-		ssize_t nb = socket_recv(sock, &recv_p, sizeof(Packet), 0);
+		ssize_t nb = socket_recv(args->sock, &recv_p, sizeof(Packet), 0);
 		if (nb <= 0) {
-			printf("Client disconnected\n");
-			remove_client(sock);
+			log_info(args->logger, "client disconnected");
+			remove_client(args->sock);
 			break;
 		}
 
@@ -52,32 +58,39 @@ void *client_handler(void *arg) {
 			broadcast(recv_p);
 			break;
 		case T_PING:
+			Packet p;
+			p.type = T_PING;
+			p.data.ping.timestamp = get_timestamp();
+			p.data.ping.user_id = recv_p.data.ping.user_id;
+
+			socket_send(args->sock, &p, sizeof(Packet), 0);
 			break;
 		case T_AUTH:
 			break;
 		case T_DISCONNECT:
-			printf("Client requested disconnect\n");
-			remove_client(sock);
-			socket_close(sock);
+			log_info(args->logger, "client requested disconnect\n");
+			remove_client(args->sock);
+			socket_close(args->sock);
 			return NULL;
 		default:
-			printf("Unknown packet type: %d\n", recv_p.type);
+			log_warn(args->logger, "unknown packet type: %d\n", recv_p.type);
 		}
 	}
 
-	socket_close(sock);
+	socket_close(args->sock);
 	return NULL;
 }
 
 int main() {
+	Logger l = logger_init(LOG_DEBUG, "server", NULL, 1, 1);
 	int server_fd;
 	struct sockaddr_in address;
 	socklen_t addrlen = sizeof(address);
 
 	socket_init();
 
-	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		perror("socket failed");
+	if ((server_fd = socket_create(AF_INET, SOCK_STREAM, 0)) < 0) {
+		log_fatal(&l, "socket failed");
 		return -1;
 	}
 
@@ -87,45 +100,52 @@ int main() {
 	address.sin_port = htons(PORT);
 
 	if (socket_bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
-		perror("bind failed");
+		log_fatal(&l, "bind failed");
 		socket_close(server_fd);
 		return -1;
 	}
 
-	if (socket_listen(server_fd, 3) < 0) {
-		perror("listen failed");
+	if (socket_listen(server_fd, 10) < 0) {
+		log_fatal(&l, "listen failed");
 		socket_close(server_fd);
 		return -1;
 	}
 
-	printf("server listening on port %d...\n", PORT);
+	log_info(&l, "server listening on port %d...", PORT);
 
 	while (1) {
-		socket_t connfd = accept(server_fd, (struct sockaddr *)&address, &addrlen);
+		socket_t connfd = socket_accept(server_fd, (struct sockaddr *)&address, &addrlen);
 		if (connfd <= 0) {
-			perror("accept failed");
+			log_fatal(&l, "accept failed");
 			continue;
 		}
 
 		pthread_mutex_lock(&clients_mutex);
 		if (client_count >= MAX_CLIENTS) {
-			printf("Too many clients, rejecting connection\n");
+			log_info(&l, "too many clients, rejecting connection");
 			socket_close(connfd);
 			pthread_mutex_unlock(&clients_mutex);
 			continue;
 		}
+
 		clients[client_count++] = connfd;
 		pthread_mutex_unlock(&clients_mutex);
 
-		printf("Client connected\n");
+		log_info(&l, "(%d) client connected", connfd);
+
+		thread_args_t *args = malloc(sizeof(thread_args_t));
+		args->sock = connfd;
+		args->logger = &l;
 
 		pthread_t tid;
-		if (pthread_create(&tid, NULL, client_handler, (void *)(intptr_t)connfd) != 0) {
-			perror("pthread_create failed");
+		if (pthread_create(&tid, NULL, client_handler, args) != 0) {
+			log_fatal(&l, "pthread_create failed");
 			remove_client(connfd);
 			socket_close(connfd);
+			free(args);
 			continue;
 		}
+
 		pthread_detach(tid);
 	}
 

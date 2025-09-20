@@ -23,7 +23,7 @@ typedef struct Message_s
 
 typedef struct Ping_s
 {
-	uint32_t timestamp;
+	time_t timestamp;
 	uint32_t user_id;
 } Ping;
 
