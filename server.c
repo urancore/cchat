@@ -1,6 +1,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "core/socket/socket.h"
 #include "utils/logger/logger.h"
@@ -60,7 +61,7 @@ void *client_handler(void *arg) {
 		case T_PING:
 			Packet p;
 			p.type = T_PING;
-			p.data.ping.timestamp = get_timestamp();
+			p.data.ping.timestamp = get_timestamp()-recv_p.data.ping.timestamp;
 			p.data.ping.user_id = recv_p.data.ping.user_id;
 
 			socket_send(args->sock, &p, sizeof(Packet), 0);

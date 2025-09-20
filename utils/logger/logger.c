@@ -37,13 +37,17 @@ static void _vprint_log(Logger *l, LogLevel level, const char *fmt, va_list args
 
 	if (l->show_timestamp) {
 		time_t timer = time(NULL);
+
+	#ifdef _WIN32
 		struct tm tm_info;
-		#ifdef _WIN32
 		localtime_s(&tm_info, &timer);
-		#else
-		localtime_r(&timer, &tm_info);
-		#endif
 		strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_info);
+	#else
+		struct tm *tm_ptr = localtime(&timer);
+		if (tm_ptr) {
+		strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", tm_ptr);
+		}
+	#endif
 	}
 
 	if (l->use_color) {
@@ -62,6 +66,7 @@ static void _vprint_log(Logger *l, LogLevel level, const char *fmt, va_list args
 
 	fprintf(l->stream, "%s\n", LogMessage);
 }
+
 
 void print_log(Logger *l, LogLevel level, const char *fmt, ...)
 {

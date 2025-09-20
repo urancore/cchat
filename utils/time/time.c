@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <time.h>
 
-time_t get_timestamp()
+
+time_t get_timestamp(void)
 {
-	time_t current_timestamp;
-	current_timestamp = time(NULL);
-	return current_timestamp;
+    return time(NULL);
 }

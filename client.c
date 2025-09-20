@@ -60,7 +60,11 @@ void *recv_thread(void *arg) {
 				printf("%s: %s\n", p.data.text_message.username, p.data.text_message.text);
 				break;
 			case T_PING:
+				#if _WIN32
 				printf("(server) pong: %lld\n", p.data.ping.timestamp);
+				#else
+				printf("(server) pong: %ld\n", p.data.ping.timestamp);
+				#endif
 				break;
 			case T_AUTH:
 				break;
